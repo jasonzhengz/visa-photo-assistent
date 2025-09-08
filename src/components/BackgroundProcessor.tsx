@@ -11,37 +11,22 @@ interface BackgroundProcessorProps {
 export default function BackgroundProcessor({ originalPhoto, onProcessedPhoto }: BackgroundProcessorProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [progress, setProgress] = useState(0);
   const [statusMessage, setStatusMessage] = useState('');
   const [processedResult, setProcessedResult] = useState<string | null>(null);
 
   const handleProcessBackground = async () => {
     setIsProcessing(true);
     setError(null);
-    setProgress(0);
-    setStatusMessage('Initializing...');
+    setStatusMessage('Processing with AI...');
     
     try {
-      const processedPhoto = await removeBackground(originalPhoto, (progressValue) => {
-        setProgress(progressValue);
-        
-        // Update status message based on progress
-        if (progressValue <= 20) {
-          setStatusMessage('Loading AI model...');
-        } else if (progressValue <= 70) {
-          setStatusMessage('AI processing background...');
-        } else {
-          setStatusMessage('Adding white background...');
-        }
-      });
-      
+      const processedPhoto = await removeBackground(originalPhoto);
       setStatusMessage('Complete!');
       setProcessedResult(processedPhoto);
       onProcessedPhoto(processedPhoto);
     } catch (err) {
       setError('Failed to process background. Please try again.');
       console.error('Background processing error:', err);
-      setProgress(0);
       setStatusMessage('');
     } finally {
       setIsProcessing(false);
@@ -51,20 +36,16 @@ export default function BackgroundProcessor({ originalPhoto, onProcessedPhoto }:
   const handleSkipProcessing = async () => {
     setIsProcessing(true);
     setError(null);
-    setProgress(0);
     setStatusMessage('Adding white background...');
     
     try {
-      setProgress(50);
       const processedPhoto = await skipBackgroundProcessing(originalPhoto);
-      setProgress(100);
       setStatusMessage('Complete!');
       setProcessedResult(processedPhoto);
       onProcessedPhoto(processedPhoto);
     } catch (err) {
       setError('Failed to process image. Please try again.');
       console.error('Background processing error:', err);
-      setProgress(0);
       setStatusMessage('');
     } finally {
       setIsProcessing(false);
@@ -114,22 +95,12 @@ export default function BackgroundProcessor({ originalPhoto, onProcessedPhoto }:
             className="w-full py-3 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
           >
             {isProcessing ? (
-              <div className="flex flex-col items-center">
-                <div className="flex items-center mb-2">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  {statusMessage}
-                </div>
-                {/* Progress bar */}
-                <div className="w-full bg-green-200 rounded-full h-2">
-                  <div 
-                    className="bg-white h-2 rounded-full transition-all duration-300 ease-out"
-                    style={{ width: `${progress}%` }}
-                  ></div>
-                </div>
-                <div className="text-xs mt-1 opacity-80">{progress}%</div>
+              <div className="flex items-center justify-center">
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                {statusMessage}
               </div>
             ) : (
               'AI Background Removal'

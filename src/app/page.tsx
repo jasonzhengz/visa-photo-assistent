@@ -6,7 +6,6 @@ import CountrySelector from '@/components/CountrySelector';
 import CameraCapture from '@/components/CameraCapture';
 import BackgroundProcessor from '@/components/BackgroundProcessor';
 import PhotoCropper from '@/components/PhotoCropper';
-import PhotoLayout from '@/components/PhotoLayout';
 import DownloadSection from '@/components/DownloadSection';
 
 export default function Home() {
@@ -35,14 +34,9 @@ export default function Home() {
     setCurrentStep(4);
   };
 
-  const handleCroppedPhoto = (croppedPhoto: string) => {
-    setPhotoState(prev => ({ ...prev, croppedPhoto }));
-    setCurrentStep(5);
-  };
-
   const handleLayoutGenerated = (layoutPhoto: string) => {
     setPhotoState(prev => ({ ...prev, finalLayout: layoutPhoto }));
-    setCurrentStep(6);
+    setCurrentStep(5);
   };
 
   const resetApp = () => {
@@ -81,7 +75,7 @@ export default function Home() {
       {/* Progress indicator */}
       <div className="max-w-4xl mx-auto px-4 py-4">
         <div className="flex items-center justify-between mb-8">
-          {[1, 2, 3, 4, 5, 6].map((step) => (
+          {[1, 2, 3, 4, 5].map((step) => (
             <div key={step} className="flex items-center">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
@@ -92,7 +86,7 @@ export default function Home() {
               >
                 {step}
               </div>
-              {step < 6 && (
+              {step < 5 && (
                 <div
                   className={`w-16 h-1 mx-2 ${
                     step < currentStep ? 'bg-blue-600' : 'bg-gray-200'
@@ -108,9 +102,8 @@ export default function Home() {
             {currentStep === 1 && 'Step 1: Select your destination country'}
             {currentStep === 2 && 'Step 2: Take a photo using your device camera'}
             {currentStep === 3 && 'Step 3: Process background to white'}
-            {currentStep === 4 && 'Step 4: Crop photo to visa requirements'}
-            {currentStep === 5 && 'Step 5: Generate printable layout'}
-            {currentStep === 6 && 'Step 6: Download and print your photos'}
+            {currentStep === 4 && 'Step 4: Crop photo and generate printable layout'}
+            {currentStep === 5 && 'Step 5: Download and print your photos'}
           </p>
         </div>
       </div>
@@ -142,26 +135,17 @@ export default function Home() {
             />
           )}
 
-          {/* Step 4: Photo Cropping */}
+          {/* Step 4: Photo Cropping & Layout Generation */}
           {currentStep === 4 && photoState.processedPhoto && photoState.selectedCountry && (
             <PhotoCropper
               processedPhoto={photoState.processedPhoto}
-              visaRequirement={photoState.selectedCountry}
-              onCroppedPhoto={handleCroppedPhoto}
-            />
-          )}
-
-          {/* Step 5: Layout Generation */}
-          {currentStep === 5 && photoState.croppedPhoto && photoState.selectedCountry && (
-            <PhotoLayout
-              croppedPhoto={photoState.croppedPhoto}
               visaRequirement={photoState.selectedCountry}
               onLayoutGenerated={handleLayoutGenerated}
             />
           )}
 
-          {/* Step 6: Download */}
-          {currentStep === 6 && photoState.finalLayout && photoState.selectedCountry && (
+          {/* Step 5: Download */}
+          {currentStep === 5 && photoState.finalLayout && photoState.selectedCountry && (
             <DownloadSection
               layoutPhoto={photoState.finalLayout}
               visaRequirement={photoState.selectedCountry}

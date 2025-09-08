@@ -6,11 +6,12 @@ import { VisaRequirement, CropArea } from '@/types';
 interface PhotoCropperProps {
   processedPhoto: string;
   visaRequirement: VisaRequirement;
-  onCroppedPhoto: (croppedPhoto: string) => void;
+  onLayoutGenerated: (layoutPhoto: string) => void;
 }
 
-export default function PhotoCropper({ processedPhoto, visaRequirement, onCroppedPhoto }: PhotoCropperProps) {
+export default function PhotoCropper({ processedPhoto, visaRequirement, onLayoutGenerated }: PhotoCropperProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const layoutCanvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [cropArea, setCropArea] = useState<CropArea>({ x: 50, y: 50, width: 200, height: 250 });
@@ -88,14 +89,14 @@ export default function PhotoCropper({ processedPhoto, visaRequirement, onCroppe
     setIsDragging(false);
   };
 
-  const cropPhoto = () => {
-    if (!imageRef.current || !canvasRef.current) return;
+  const cropAndGenerateLayout = () => {
+    if (!imageRef.current || !canvasRef.current || !layoutCanvasRef.current) return;
     
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const cropCanvas = canvasRef.current;
+    const cropCtx = cropCanvas.getContext('2d');
     const img = imageRef.current;
     
-    if (!ctx) return;
+    if (!cropCtx) return;
     
     // Calculate scaling factors
     const scaleX = img.naturalWidth / img.clientWidth;
@@ -104,8 +105,11 @@ export default function PhotoCropper({ processedPhoto, visaRequirement, onCroppe
     // Set canvas size to visa requirement dimensions (at 300 DPI)
     const dpi = 300;
     const mmToPixels = dpi / 25.4;
-    canvas.width = visaRequirement.width * mmToPixels;
-    canvas.height = visaRequirement.height * mmToPixels;
+    const photoWidth = visaRequirement.width * mmToPixels;
+    const photoHeight = visaRequirement.height * mmToPixels;
+    
+    cropCanvas.width = photoWidth;
+    cropCanvas.height = photoHeight;
     
     // Calculate crop area in original image coordinates
     const sourceX = cropArea.x * scaleX;
@@ -114,7 +118,7 @@ export default function PhotoCropper({ processedPhoto, visaRequirement, onCroppe
     const sourceHeight = cropArea.height * scaleY;
     
     // Draw cropped and scaled image
-    ctx.drawImage(
+    cropCtx.drawImage(
       img,
       sourceX,
       sourceY,
@@ -122,18 +126,120 @@ export default function PhotoCropper({ processedPhoto, visaRequirement, onCroppe
       sourceHeight,
       0,
       0,
-      canvas.width,
-      canvas.height
+      photoWidth,
+      photoHeight
     );
     
-    const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.95);
-    onCroppedPhoto(croppedDataUrl);
+    // Get the cropped photo as data URL to use for layout generation
+    const croppedDataUrl = cropCanvas.toDataURL('image/jpeg', 0.95);
+    
+    // Generate 4R layout
+    generate4RLayout(croppedDataUrl);
+  };
+
+  const generate4RLayout = (croppedPhoto: string) => {
+    if (!layoutCanvasRef.current) return;
+    
+    const canvas = layoutCanvasRef.current;
+    const ctx = canvas.getContext('2d');
+    
+    if (!ctx) return;
+    
+    // 4R paper dimensions: 4" x 6" at 300 DPI
+    const dpi = 300;
+    const paperWidth = 4 * dpi;  // 1200px
+    const paperHeight = 6 * dpi; // 1800px
+    
+    canvas.width = paperWidth;
+    canvas.height = paperHeight;
+    
+    // Set white background
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, paperWidth, paperHeight);
+    
+    // Calculate photo dimensions at 300 DPI
+    const mmToPixels = dpi / 25.4;
+    const photoWidth = visaRequirement.width * mmToPixels;
+    const photoHeight = visaRequirement.height * mmToPixels;
+    
+    // Calculate how many photos can fit
+    const cols = Math.floor(paperWidth / (photoWidth + 20)); // 20px margin between photos
+    const rows = Math.floor(paperHeight / (photoHeight + 20));
+    
+    // Calculate starting positions to center the grid
+    const totalGridWidth = cols * photoWidth + (cols - 1) * 20;
+    const totalGridHeight = rows * photoHeight + (rows - 1) * 20;
+    const startX = (paperWidth - totalGridWidth) / 2;
+    const startY = (paperHeight - totalGridHeight) / 2;
+    
+    // Load and draw photos
+    const img = new Image();
+    img.onload = () => {
+      // Draw photos in grid
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          const x = startX + col * (photoWidth + 20);
+          const y = startY + row * (photoHeight + 20);
+          
+          // Draw photo
+          ctx.drawImage(img, x, y, photoWidth, photoHeight);
+          
+          // Draw border
+          ctx.strokeStyle = '#e5e7eb';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x, y, photoWidth, photoHeight);
+        }
+      }
+      
+      // Add cutting guides (dotted lines)
+      ctx.setLineDash([5, 5]);
+      ctx.strokeStyle = '#9ca3af';
+      ctx.lineWidth = 0.5;
+      
+      // Vertical cutting lines
+      for (let col = 1; col < cols; col++) {
+        const x = startX + col * (photoWidth + 20) - 10;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, paperHeight);
+        ctx.stroke();
+      }
+      
+      // Horizontal cutting lines
+      for (let row = 1; row < rows; row++) {
+        const y = startY + row * (photoHeight + 20) - 10;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(paperWidth, y);
+        ctx.stroke();
+      }
+      
+      // Reset line dash
+      ctx.setLineDash([]);
+      
+      // Add text information
+      ctx.fillStyle = '#6b7280';
+      ctx.font = '24px Arial';
+      ctx.textAlign = 'center';
+      
+      const infoText = `${visaRequirement.country} Visa Photos - ${visaRequirement.width}mm × ${visaRequirement.height}mm`;
+      ctx.fillText(infoText, paperWidth / 2, paperHeight - 30);
+      
+      ctx.font = '18px Arial';
+      ctx.fillText(`${cols}×${rows} photos on 4"×6" paper`, paperWidth / 2, paperHeight - 60);
+      
+      // Generate final layout
+      const layoutDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+      onLayoutGenerated(layoutDataUrl);
+    };
+    
+    img.src = croppedPhoto;
   };
 
   return (
     <div className="w-full max-w-2xl mx-auto">
       <div className="bg-white rounded-lg shadow-lg p-6">
-        <h3 className="text-lg font-semibold mb-4">Step 3: Crop Photo</h3>
+        <h3 className="text-lg font-semibold mb-4">Step 4: Crop Photo</h3>
         
         <div className="mb-4">
           <p className="text-sm text-gray-600 mb-2">
@@ -243,12 +349,12 @@ export default function PhotoCropper({ processedPhoto, visaRequirement, onCroppe
           />
         </div>
 
-        {/* Crop button */}
+        {/* Crop and generate layout button */}
         <button
-          onClick={cropPhoto}
+          onClick={cropAndGenerateLayout}
           className="w-full py-3 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
         >
-          Crop Photo to {visaRequirement.width}mm × {visaRequirement.height}mm
+          Crop & Generate Layout
         </button>
 
         {/* Instructions */}
@@ -263,8 +369,9 @@ export default function PhotoCropper({ processedPhoto, visaRequirement, onCroppe
         </div>
       </div>
 
-      {/* Hidden canvas for cropping */}
+      {/* Hidden canvases for cropping and layout */}
       <canvas ref={canvasRef} className="hidden" />
+      <canvas ref={layoutCanvasRef} className="hidden" />
     </div>
   );
 }
