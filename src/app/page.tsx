@@ -50,6 +50,32 @@ export default function Home() {
     setCurrentStep(1);
   };
 
+  const goToPreviousStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+      
+      // Clear state data for the current and future steps
+      switch (currentStep) {
+        case 2:
+          // Going back from step 2 to 1, clear selected country
+          setPhotoState(prev => ({ ...prev, selectedCountry: null }));
+          break;
+        case 3:
+          // Going back from step 3 to 2, clear original photo
+          setPhotoState(prev => ({ ...prev, originalPhoto: null }));
+          break;
+        case 4:
+          // Going back from step 4 to 3, clear processed photo
+          setPhotoState(prev => ({ ...prev, processedPhoto: null }));
+          break;
+        case 5:
+          // Going back from step 5 to 4, clear final layout
+          setPhotoState(prev => ({ ...prev, finalLayout: null }));
+          break;
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Header */}
@@ -61,12 +87,20 @@ export default function Home() {
               <p className="text-sm text-gray-600">Professional visa photos made easy</p>
             </div>
             {currentStep > 1 && (
-              <button
-                onClick={resetApp}
-                className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-              >
-                Start Over
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={goToPreviousStep}
+                  className="px-4 py-2 text-sm bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors"
+                >
+                  ← Back
+                </button>
+                <button
+                  onClick={resetApp}
+                  className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                >
+                  Start Over
+                </button>
+              </div>
             )}
           </div>
         </div>
