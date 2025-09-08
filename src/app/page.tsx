@@ -146,7 +146,7 @@ export default function Home() {
         <div className="text-center mb-8">
           <p className="text-sm text-gray-600">
             {currentStep === 1 && 'Step 1: Select your destination country'}
-            {currentStep === 2 && 'Step 2: Take a photo using your device camera'}
+            {currentStep === 2 && 'Step 2: Take a photo using your device camera or upload from your device'}
             {currentStep === 3 && 'Step 3: Process background to white'}
             {currentStep === 4 && 'Step 4: Crop photo and generate printable layout'}
             {currentStep === 5 && 'Step 5: Download and print your photos'}

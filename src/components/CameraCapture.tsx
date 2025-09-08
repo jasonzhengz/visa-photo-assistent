@@ -11,8 +11,10 @@ interface CameraCaptureProps {
 
 export default function CameraCapture({ onPhotoCapture, visaRequirement }: CameraCaptureProps) {
   const webcamRef = useRef<Webcam>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+  const [uploadMethod, setUploadMethod] = useState<'camera' | 'upload'>('camera');
 
   const capture = useCallback(() => {
     if (webcamRef.current) {
@@ -32,11 +34,57 @@ export default function CameraCapture({ onPhotoCapture, visaRequirement }: Camer
     setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
   };
 
+  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result;
+        if (typeof result === 'string') {
+          onPhotoCapture(result);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  }, [onPhotoCapture]);
+
+  const triggerFileUpload = () => {
+    fileInputRef.current?.click();
+  };
+
   const aspectRatio = visaRequirement.width / visaRequirement.height;
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="relative bg-black rounded-lg overflow-hidden">
+      {/* Method selector */}
+      <div className="mb-4">
+        <div className="flex bg-gray-100 rounded-lg p-1">
+          <button
+            onClick={() => setUploadMethod('camera')}
+            className={`flex-1 py-2 px-4 rounded-md transition-colors text-sm font-medium ${
+              uploadMethod === 'camera'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            📷 Take Photo
+          </button>
+          <button
+            onClick={() => setUploadMethod('upload')}
+            className={`flex-1 py-2 px-4 rounded-md transition-colors text-sm font-medium ${
+              uploadMethod === 'upload'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            📁 Upload Photo
+          </button>
+        </div>
+      </div>
+
+      {/* Camera capture section */}
+      {uploadMethod === 'camera' && (
+        <div className="relative bg-black rounded-lg overflow-hidden">
         <Webcam
           ref={webcamRef}
           audio={false}
@@ -81,7 +129,36 @@ export default function CameraCapture({ onPhotoCapture, visaRequirement }: Camer
         {isCapturing && (
           <div className="absolute inset-0 bg-white opacity-80" />
         )}
-      </div>
+        </div>
+      )}
+
+      {/* Upload section */}
+      {uploadMethod === 'upload' && (
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-gray-50 hover:bg-gray-100 transition-colors">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
+          <div className="space-y-4">
+            <div className="text-4xl">📁</div>
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Upload a photo</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Choose a photo from your device to use for your visa application
+              </p>
+            </div>
+            <button
+              onClick={triggerFileUpload}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              Select Photo
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Instructions */}
       <div className="mt-4 p-3 bg-gray-50 rounded-lg text-sm text-gray-600">
@@ -96,7 +173,8 @@ export default function CameraCapture({ onPhotoCapture, visaRequirement }: Camer
       </div>
 
       {/* Controls */}
-      <div className="flex justify-center space-x-4 mt-4">
+      {uploadMethod === 'camera' && (
+        <div className="flex justify-center space-x-4 mt-4">
         <button
           onClick={toggleCamera}
           className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
@@ -113,7 +191,8 @@ export default function CameraCapture({ onPhotoCapture, visaRequirement }: Camer
         >
           {isCapturing ? 'Capturing...' : 'Take Photo'}
         </button>
-      </div>
+        </div>
+      )}
     </div>
   );
 }
