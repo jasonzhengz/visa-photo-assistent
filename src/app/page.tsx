@@ -74,25 +74,37 @@ export default function Home() {
 
       {/* Progress indicator */}
       <div className="max-w-4xl mx-auto px-4 py-4">
-        <div className="flex items-center justify-between mb-8">
-          {[1, 2, 3, 4, 5].map((step) => (
-            <div key={step} className="flex items-center">
+        <div className="relative flex items-center justify-between mb-8">
+          {/* Progress line background */}
+          <div className="absolute top-4 left-8 right-8 h-0.5 bg-gray-200 z-0"></div>
+          {/* Progress line fill */}
+          <div 
+            className="absolute top-4 left-8 h-0.5 bg-blue-600 z-0 transition-all duration-300"
+            style={{ width: `calc(${((currentStep - 1) / 4) * 100}% - ${((currentStep - 1) / 4) * 2}rem)` }}
+          ></div>
+          
+          {[
+            { number: 1, name: 'Country' },
+            { number: 2, name: 'Photo' },
+            { number: 3, name: 'Background' },
+            { number: 4, name: 'Crop' },
+            { number: 5, name: 'Download' }
+          ].map((step) => (
+            <div key={step.number} className="flex flex-col items-center">
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  step <= currentStep
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors duration-200 relative z-10 ${
+                  step.number <= currentStep
                     ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 text-gray-600'
+                    : 'bg-white text-gray-600 border-2 border-gray-200'
                 }`}
               >
-                {step}
+                {step.number}
               </div>
-              {step < 5 && (
-                <div
-                  className={`w-16 h-1 mx-2 ${
-                    step < currentStep ? 'bg-blue-600' : 'bg-gray-200'
-                  }`}
-                />
-              )}
+              <span className={`mt-2 text-xs font-medium ${
+                step.number <= currentStep ? 'text-blue-600' : 'text-gray-500'
+              }`}>
+                {step.name}
+              </span>
             </div>
           ))}
         </div>
