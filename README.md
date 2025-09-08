@@ -6,7 +6,7 @@ A Progressive Web App that helps users take and process photos for visa applicat
 
 ✅ **Country Selection**: Support for 10+ countries with specific visa photo requirements
 ✅ **Camera Integration**: Device camera access with real-time photo frame overlay
-✅ **Background Processing**: Automatic background removal and replacement with white
+✅ **Background Processing**: AI-powered background removal with white background replacement
 ✅ **Photo Cropping**: Interactive cropping tool with visa-specific dimensions
 ✅ **4R Layout Generation**: Professional printing layout (4" × 6") with multiple photos
 ✅ **Download & Print**: High-resolution exports optimized for printing
@@ -30,7 +30,7 @@ A Progressive Web App that helps users take and process photos for visa applicat
 
 1. **Select Country**: Choose visa destination country
 2. **Take Photo**: Use device camera with guided frame overlay
-3. **Process Background**: Automatic background change to white
+3. **Process Background**: AI-powered background removal or white background overlay
 4. **Crop Photo**: Interactive cropping to exact visa dimensions
 5. **Generate Layout**: Create 4R printing layout with multiple copies
 6. **Download**: Get high-resolution files ready for printing
@@ -42,7 +42,7 @@ A Progressive Web App that helps users take and process photos for visa applicat
 - **Styling**: Tailwind CSS
 - **PWA**: next-pwa for service worker and manifest
 - **Camera**: react-webcam for device camera access
-- **Image Processing**: HTML5 Canvas API
+- **Image Processing**: HTML5 Canvas API + @imgly/background-removal for AI processing
 - **Deployment**: Vercel
 
 ## Getting Started
@@ -114,9 +114,12 @@ src/
 ## Image Processing
 
 - **Input**: JPEG from device camera
-- **Background Removal**: Canvas-based processing (with optional API fallback)
+- **Background Processing**: Two options available:
+  - AI removal: Professional AI-powered background detection and removal
+  - Skip processing: Simple white background overlay (recommended for photos already against white backgrounds)
 - **Output Resolution**: 300 DPI for professional printing
 - **Format**: JPEG with high quality compression
+- **Privacy**: All processing happens locally in your browser
 
 ## PWA Features
 

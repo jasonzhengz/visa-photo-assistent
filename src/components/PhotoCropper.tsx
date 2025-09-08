@@ -15,6 +15,32 @@ export default function PhotoCropper({ processedPhoto, visaRequirement, onCroppe
   const [isDragging, setIsDragging] = useState(false);
   const [cropArea, setCropArea] = useState<CropArea>({ x: 50, y: 50, width: 200, height: 250 });
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [currentPhoto, setCurrentPhoto] = useState(processedPhoto);
+
+  // Debug: Log the processed photo data
+  useEffect(() => {
+    console.log('PhotoCropper received processedPhoto:', processedPhoto.substring(0, 50));
+    // Only reset states if we actually have a NEW photo (not just a re-render)
+    if (currentPhoto !== processedPhoto) {
+      console.log('New photo detected, resetting states');
+      setCurrentPhoto(processedPhoto);
+      setImageLoaded(false);
+      setImageError(false);
+    }
+  }, [processedPhoto, currentPhoto]);
+
+  const handleImageLoad = () => {
+    console.log('Image loaded successfully');
+    setImageLoaded(true);
+    setImageError(false);
+  };
+
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    console.error('Failed to load processed image:', e);
+    setImageError(true);
+    setImageLoaded(false);
+  };
 
   const aspectRatio = visaRequirement.width / visaRequirement.height;
 
@@ -116,32 +142,68 @@ export default function PhotoCropper({ processedPhoto, visaRequirement, onCroppe
         </div>
 
         {/* Image with crop overlay */}
-        <div className="relative mb-4 bg-gray-100 rounded-lg overflow-hidden">
-          <img
-            ref={imageRef}
-            src={processedPhoto}
-            alt="Processed"
-            className="w-full h-auto max-h-96 object-contain"
-            onLoad={() => setImageLoaded(true)}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-            style={{ userSelect: 'none' }}
-          />
+        <div className="relative mb-4 bg-white rounded-lg overflow-hidden border min-h-96">
+          {imageError ? (
+            <div className="flex items-center justify-center h-96 bg-gray-100">
+              <div className="text-center">
+                <p className="text-gray-600">Failed to load processed image</p>
+                <p className="text-sm text-gray-500">Try processing the background again</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              {!imageLoaded && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                    <p className="text-gray-600">Loading processed image...</p>
+                  </div>
+                </div>
+              )}
+              <img
+                ref={imageRef}
+                key={processedPhoto} // Force re-render when processedPhoto changes
+                src={processedPhoto}
+                alt="Processed"
+                className="w-full h-auto max-h-96 object-contain"
+                onLoad={handleImageLoad}
+                onError={handleImageError}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+                style={{ 
+                  userSelect: 'none', 
+                  backgroundColor: 'white', 
+                  minHeight: '200px',
+                  opacity: imageLoaded ? 1 : 0
+                }}
+              />
+            </>
+          )}
           
           {imageLoaded && (
             <>
-              {/* Overlay */}
-              <div className="absolute inset-0 bg-black bg-opacity-30 pointer-events-none" />
+              {/* Sophisticated overlay that reveals crop area */}
+              <div 
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background: `radial-gradient(ellipse ${cropArea.width/2}px ${cropArea.height/2}px at ${cropArea.x + cropArea.width/2}px ${cropArea.y + cropArea.height/2}px, transparent 0%, transparent 100%, rgba(0,0,0,0.4) 100%)`,
+                  WebkitMask: `radial-gradient(ellipse ${cropArea.width/2}px ${cropArea.height/2}px at ${cropArea.x + cropArea.width/2}px ${cropArea.y + cropArea.height/2}px, transparent 0%, transparent 80%, black 100%)`,
+                  mask: `radial-gradient(ellipse ${cropArea.width/2}px ${cropArea.height/2}px at ${cropArea.x + cropArea.width/2}px ${cropArea.y + cropArea.height/2}px, transparent 0%, transparent 80%, black 100%)`,
+                  backgroundColor: 'rgba(0,0,0,0.3)',
+                  zIndex: 5
+                }}
+              />
               
               {/* Crop area */}
               <div
-                className="absolute border-2 border-white shadow-lg cursor-move bg-transparent"
+                className="absolute border-2 border-yellow-400 shadow-lg cursor-move bg-transparent"
                 style={{
                   left: `${cropArea.x}px`,
                   top: `${cropArea.y}px`,
                   width: `${cropArea.width}px`,
                   height: `${cropArea.height}px`,
+                  zIndex: 10
                 }}
                 onMouseDown={handleMouseDown}
               >
