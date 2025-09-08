@@ -14,6 +14,7 @@ export default function PhotoCropper({ processedPhoto, visaRequirement, onLayout
   const layoutCanvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [cropArea, setCropArea] = useState<CropArea>({ x: 50, y: 50, width: 200, height: 250 });
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -62,31 +63,75 @@ export default function PhotoCropper({ processedPhoto, visaRequirement, onLayout
     }
   }, [imageLoaded, aspectRatio]);
 
+  // Add global mouse event listeners for smooth dragging
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (!imageRef.current) return;
+      
+      const rect = imageRef.current.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      
+      // Calculate new crop position using the offset
+      const newX = mouseX - dragOffset.x;
+      const newY = mouseY - dragOffset.y;
+      
+      const maxX = rect.width - cropArea.width;
+      const maxY = rect.height - cropArea.height;
+      
+      setCropArea(prev => ({
+        ...prev,
+        x: Math.max(0, Math.min(newX, maxX)),
+        y: Math.max(0, Math.min(newY, maxY)),
+      }));
+    };
+
+    const handleGlobalMouseUp = () => {
+      setIsDragging(false);
+      setDragOffset({ x: 0, y: 0 });
+    };
+
+    document.addEventListener('mousemove', handleGlobalMouseMove);
+    document.addEventListener('mouseup', handleGlobalMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMouseMove);
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, [isDragging, dragOffset, cropArea.width, cropArea.height]);
+
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !imageRef.current) return;
+    if (!imageRef.current) return;
     
-    e.preventDefault();
     const rect = imageRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    const maxX = rect.width - cropArea.width;
-    const maxY = rect.height - cropArea.height;
+    // Calculate offset from mouse to crop area top-left corner
+    setDragOffset({
+      x: x - cropArea.x,
+      y: y - cropArea.y
+    });
     
-    setCropArea(prev => ({
-      ...prev,
-      x: Math.max(0, Math.min(x - cropArea.width / 2, maxX)),
-      y: Math.max(0, Math.min(y - cropArea.height / 2, maxY)),
-    }));
+    setIsDragging(true);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    // Prevent default but let global handler do the work
+    if (isDragging) {
+      e.preventDefault();
+    }
   };
 
   const handleMouseUp = () => {
-    setIsDragging(false);
+    // This is mainly for fallback, global handler will do most work
+    if (isDragging) {
+      setIsDragging(false);
+      setDragOffset({ x: 0, y: 0 });
+    }
   };
 
   const cropAndGenerateLayout = () => {
@@ -303,7 +348,11 @@ export default function PhotoCropper({ processedPhoto, visaRequirement, onLayout
               
               {/* Crop area */}
               <div
-                className="absolute border-2 border-yellow-400 shadow-lg cursor-move bg-transparent"
+                className={`absolute border-2 shadow-lg bg-transparent transition-colors ${
+                  isDragging 
+                    ? 'border-blue-500 cursor-grabbing' 
+                    : 'border-yellow-400 cursor-grab hover:border-yellow-500'
+                }`}
                 style={{
                   left: `${cropArea.x}px`,
                   top: `${cropArea.y}px`,
