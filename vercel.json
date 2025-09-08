@@ -1,0 +1,21 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "functions": {
+    "src/app/api/*/route.ts": {
+      "maxDuration": 60
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/sw.js",
+      "destination": "/_next/static/sw.js"
+    },
+    {
+      "source": "/workbox-:hash.js",
+      "destination": "/_next/static/workbox-:hash.js"
+    }
+  ]
+}

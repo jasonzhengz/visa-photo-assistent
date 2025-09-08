@@ -1,102 +1,187 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from 'react';
+import { PhotoState } from '@/types';
+import CountrySelector from '@/components/CountrySelector';
+import CameraCapture from '@/components/CameraCapture';
+import BackgroundProcessor from '@/components/BackgroundProcessor';
+import PhotoCropper from '@/components/PhotoCropper';
+import PhotoLayout from '@/components/PhotoLayout';
+import DownloadSection from '@/components/DownloadSection';
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [photoState, setPhotoState] = useState<PhotoState>({
+    originalPhoto: null,
+    processedPhoto: null,
+    croppedPhoto: null,
+    finalLayout: null,
+    selectedCountry: null,
+  });
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  const [currentStep, setCurrentStep] = useState(1);
+
+  const handleCountrySelect = (requirement: typeof photoState.selectedCountry) => {
+    setPhotoState(prev => ({ ...prev, selectedCountry: requirement }));
+    setCurrentStep(2);
+  };
+
+  const handlePhotoCapture = (photo: string) => {
+    setPhotoState(prev => ({ ...prev, originalPhoto: photo }));
+    setCurrentStep(3);
+  };
+
+  const handleProcessedPhoto = (processedPhoto: string) => {
+    setPhotoState(prev => ({ ...prev, processedPhoto }));
+    setCurrentStep(4);
+  };
+
+  const handleCroppedPhoto = (croppedPhoto: string) => {
+    setPhotoState(prev => ({ ...prev, croppedPhoto }));
+    setCurrentStep(5);
+  };
+
+  const handleLayoutGenerated = (layoutPhoto: string) => {
+    setPhotoState(prev => ({ ...prev, finalLayout: layoutPhoto }));
+    setCurrentStep(6);
+  };
+
+  const resetApp = () => {
+    setPhotoState({
+      originalPhoto: null,
+      processedPhoto: null,
+      croppedPhoto: null,
+      finalLayout: null,
+      selectedCountry: null,
+    });
+    setCurrentStep(1);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-4xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Visa Photo Assistant</h1>
+              <p className="text-sm text-gray-600">Professional visa photos made easy</p>
+            </div>
+            {currentStep > 1 && (
+              <button
+                onClick={resetApp}
+                className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Start Over
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Progress indicator */}
+      <div className="max-w-4xl mx-auto px-4 py-4">
+        <div className="flex items-center justify-between mb-8">
+          {[1, 2, 3, 4, 5, 6].map((step) => (
+            <div key={step} className="flex items-center">
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                  step <= currentStep
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 text-gray-600'
+                }`}
+              >
+                {step}
+              </div>
+              {step < 6 && (
+                <div
+                  className={`w-16 h-1 mx-2 ${
+                    step < currentStep ? 'bg-blue-600' : 'bg-gray-200'
+                  }`}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="text-center mb-8">
+          <p className="text-sm text-gray-600">
+            {currentStep === 1 && 'Step 1: Select your destination country'}
+            {currentStep === 2 && 'Step 2: Take a photo using your device camera'}
+            {currentStep === 3 && 'Step 3: Process background to white'}
+            {currentStep === 4 && 'Step 4: Crop photo to visa requirements'}
+            {currentStep === 5 && 'Step 5: Generate printable layout'}
+            {currentStep === 6 && 'Step 6: Download and print your photos'}
+          </p>
+        </div>
+      </div>
+
+      {/* Main content */}
+      <main className="max-w-4xl mx-auto px-4 pb-12">
+        <div className="space-y-8">
+          {/* Step 1: Country Selection */}
+          {currentStep === 1 && (
+            <CountrySelector
+              onCountrySelect={handleCountrySelect}
+              selectedCountry={photoState.selectedCountry}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          )}
+
+          {/* Step 2: Camera Capture */}
+          {currentStep === 2 && photoState.selectedCountry && (
+            <CameraCapture
+              onPhotoCapture={handlePhotoCapture}
+              visaRequirement={photoState.selectedCountry}
+            />
+          )}
+
+          {/* Step 3: Background Processing */}
+          {currentStep === 3 && photoState.originalPhoto && (
+            <BackgroundProcessor
+              originalPhoto={photoState.originalPhoto}
+              onProcessedPhoto={handleProcessedPhoto}
+            />
+          )}
+
+          {/* Step 4: Photo Cropping */}
+          {currentStep === 4 && photoState.processedPhoto && photoState.selectedCountry && (
+            <PhotoCropper
+              processedPhoto={photoState.processedPhoto}
+              visaRequirement={photoState.selectedCountry}
+              onCroppedPhoto={handleCroppedPhoto}
+            />
+          )}
+
+          {/* Step 5: Layout Generation */}
+          {currentStep === 5 && photoState.croppedPhoto && photoState.selectedCountry && (
+            <PhotoLayout
+              croppedPhoto={photoState.croppedPhoto}
+              visaRequirement={photoState.selectedCountry}
+              onLayoutGenerated={handleLayoutGenerated}
+            />
+          )}
+
+          {/* Step 6: Download */}
+          {currentStep === 6 && photoState.finalLayout && photoState.selectedCountry && (
+            <DownloadSection
+              layoutPhoto={photoState.finalLayout}
+              visaRequirement={photoState.selectedCountry}
+            />
+          )}
         </div>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+
+      {/* Footer */}
+      <footer className="bg-gray-50 border-t mt-12">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="text-center text-sm text-gray-600">
+            <p className="mb-2">
+              <strong>Visa Photo Assistant</strong> - Professional visa photos in minutes
+            </p>
+            <p>
+              Supports major countries and visa requirements. Photos are processed locally for your privacy.
+            </p>
+          </div>
+        </div>
       </footer>
     </div>
   );
